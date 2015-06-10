@@ -1,5 +1,3 @@
-//gcc -o test_libusb0 test_libusb0.c -lusb
-
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
@@ -9,10 +7,43 @@
 //Define SRM-20
 #define USB_VENDOR 0x0B75
 #define USB_PRODUCT 0x039F
-#define TIMEOUT (5*1000)
+//#define TIMEOUT (5*1000)
+#define TIMEOUT (1000)
+#define ENDPOINT_IN 0x82
+#define ENDPOINT_OUT 0x01
 
-void SendRml(){
-  printf("sending rml...\n");
+int SendRml(usb_dev_handle *dh, char *rmlfile){
+  FILE *fp;
+  char buf[128];
+  int result;
+
+  fp = fopen(rmlfile,"r");
+  if(fp==NULL){
+    printf("rml file not found\n");
+    return -1;
+  }
+  while(fgets(buf,128,fp) != NULL){
+    if (strchr(buf, '\n') != NULL) {
+       buf[strlen(buf) - 1] = '\0';
+    }
+    printf("*****start sending********\n");
+    printf("sending rml: %s\n",buf);
+    printf("number of bytes: %d\n",strlen(buf));
+    /*
+
+    result = usb_bulk_write(dh, ENDPOINT_OUT, buf, strlen(buf), TIMEOUT);
+    if(result < 0){
+      printf("rml write error\n");
+      return -1;
+    } else {
+      printf("%d bytes sent.\n",result);
+    }
+    printf("*****end sending********\n");
+    */
+  }
+
+  fclose(fp);
+  return 0;
 }
 
 /* Init USB */
@@ -37,6 +68,7 @@ struct usb_device *USB_find(struct usb_bus *busses, struct usb_device *dev)
   }
   return( NULL );
 }
+
 /* USB Open */
 struct usb_dev_handle *USB_open(struct usb_device *dev)
 {
@@ -52,6 +84,8 @@ struct usb_dev_handle *USB_open(struct usb_device *dev)
     if( usb_detach_kernel_driver_np(udev,dev->config->interface->altsetting->bInterfaceNumber)<0 ){
       fprintf(stderr,"usb_set_configuration Error.\n");
       fprintf(stderr,"usb_detach_kernel_driver_np Error.(%s)\n",usb_strerror());
+      printf("Could not complete configuration. Try with sudo.\n");
+      exit(-1);
     }
   }
 
@@ -90,7 +124,7 @@ void USB_altinterface(struct usb_dev_handle *dh,int tyep)
   }
 }
 
-main()
+int main()
 {
   struct usb_bus *bus;
   struct usb_device *dev;
@@ -103,18 +137,20 @@ main()
       fprintf(stderr,"Device not found\n");
       exit(1); 
     }
-  printf("Initialize OK\n");
+  printf("Initialization done.\n");
   /*-------------*/
     /* Device Open */
     /*-------------*/
     dh=USB_open(dev);
     if( dh==NULL ){ exit(2); }
-  printf("Device Open OK\n");
+  printf("SRM-20 opened.\n");
 
-  SendRml();
+  char *rmlfile = "zero.rml";
+  SendRml(dh, rmlfile);
 
-  printf("USB Close\n");
+  printf("SRM-20 closed.\n");
   USB_close(dh);
-  printf("USB End\n");
+
+  return 0;
 }
 

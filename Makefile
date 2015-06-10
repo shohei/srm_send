@@ -1,3 +1,3 @@
 all:
-	gcc -lusb -o main main.c 
+	gcc -o main main.c -lusb
 
