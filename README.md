@@ -1,5 +1,5 @@
 # srm_send
-Currently Linux is only supported
+Currently only Linux is supported 
 
 ## Install
 ```
